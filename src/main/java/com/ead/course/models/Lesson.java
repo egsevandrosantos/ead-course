@@ -26,4 +26,6 @@ public class Lesson implements Serializable {
     private Instant createdAt;
     @Column(nullable = false)
     private Instant updatedAt;
+    @ManyToOne(optional = false)
+    private Module module;
 }

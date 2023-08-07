@@ -9,6 +9,7 @@ import lombok.Data;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -38,4 +39,6 @@ public class Course implements Serializable {
     private Instant updatedAt;
     @Column(nullable = false)
     private UUID userInstructorId;
+    @OneToMany(mappedBy = "course")
+    private Set<Module> modules;
 }

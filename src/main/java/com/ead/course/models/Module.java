@@ -5,6 +5,7 @@ import lombok.Data;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -24,4 +25,8 @@ public class Module implements Serializable {
     private Instant createdAt;
     @Column(nullable = false)
     private Instant updatedAt;
+    @ManyToOne(optional = false)
+    private Course course;
+    @OneToMany(mappedBy = "module")
+    private Set<Lesson> lessons;
 }

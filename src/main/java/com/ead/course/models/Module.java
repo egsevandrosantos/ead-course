@@ -1,6 +1,8 @@
 package com.ead.course.models;
 
 import lombok.Data;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -25,8 +27,10 @@ public class Module implements Serializable {
     private Instant createdAt;
     @Column(nullable = false)
     private Instant updatedAt;
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @Fetch(FetchMode.SUBSELECT)
     private Course course;
-    @OneToMany(mappedBy = "module")
+    @OneToMany(mappedBy = "module", fetch = FetchType.LAZY)
+    @Fetch(FetchMode.SUBSELECT)
     private Set<Lesson> lessons;
 }

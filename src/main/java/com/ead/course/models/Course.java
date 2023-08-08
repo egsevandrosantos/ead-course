@@ -7,6 +7,8 @@ import com.ead.course.enums.converters.CourseStatusConverter;
 import lombok.Data;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -41,7 +43,8 @@ public class Course implements Serializable {
     private Instant updatedAt;
     @Column(nullable = false)
     private UUID userInstructorId;
-    @OneToMany(mappedBy = "course", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "course", fetch = FetchType.LAZY) //, cascade = CascadeType.ALL, orphanRemoval = true)
     @Fetch(FetchMode.SUBSELECT) // O JOIN ignora o FetchType LAZY e carrega com EAGER, SELECT faz varias queries a mais e SUBSELECT apenas uma query a mais
+//    @OnDelete(action = OnDeleteAction.CASCADE)
     private Set<Module> modules;
 }

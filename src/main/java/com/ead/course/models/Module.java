@@ -28,7 +28,6 @@ public class Module implements Serializable {
     @Column(nullable = false)
     private Instant updatedAt;
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
     private Course course;
     @OneToMany(mappedBy = "module", fetch = FetchType.LAZY)
     @Fetch(FetchMode.SUBSELECT)

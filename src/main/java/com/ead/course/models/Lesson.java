@@ -29,6 +29,5 @@ public class Lesson implements Serializable {
     @Column(nullable = false)
     private Instant updatedAt;
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
     private Module module;
 }

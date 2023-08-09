@@ -13,6 +13,7 @@ import org.hibernate.annotations.OnDeleteAction;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -46,5 +47,5 @@ public class Course implements Serializable {
     @OneToMany(mappedBy = "course", fetch = FetchType.LAZY) //, cascade = CascadeType.ALL, orphanRemoval = true)
     @Fetch(FetchMode.SUBSELECT) // O JOIN ignora o FetchType LAZY e carrega com EAGER, SELECT faz varias queries a mais e SUBSELECT apenas uma query a mais
 //    @OnDelete(action = OnDeleteAction.CASCADE)
-    private Set<Module> modules;
+    private List<Module> modules;
 }

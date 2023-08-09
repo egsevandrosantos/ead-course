@@ -7,7 +7,7 @@ import org.hibernate.annotations.FetchMode;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -31,5 +31,5 @@ public class Module implements Serializable {
     private Course course;
     @OneToMany(mappedBy = "module", fetch = FetchType.LAZY)
     @Fetch(FetchMode.SUBSELECT)
-    private Set<Lesson> lessons;
+    private List<Lesson> lessons;
 }

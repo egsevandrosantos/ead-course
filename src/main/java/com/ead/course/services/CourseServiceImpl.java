@@ -8,9 +8,13 @@ import com.ead.course.repositories.CourseRepository;
 import com.ead.course.repositories.LessonRepository;
 import com.ead.course.repositories.ModuleRepository;
 import com.ead.course.services.interfaces.CourseService;
+import com.ead.course.specifications.SpecificationTemplate;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -28,15 +32,18 @@ public class CourseServiceImpl implements CourseService {
     private LessonRepository lessonRepository;
 
     @Override
-    public List<CourseDTO> findAll() {
-        List<Course> courses = repository.findAll();
+    public Page<CourseDTO> findAll(SpecificationTemplate.CourseSpec filtersSpec, Pageable pageable) {
+        Page<Course> coursesPage = repository.findAll(filtersSpec, pageable);
+
+        List<Course> courses = coursesPage.getContent();
         List<CourseDTO> coursesDTO = new ArrayList<>();
         for (Course course : courses) {
             CourseDTO courseDTO = new CourseDTO();
             BeanUtils.copyProperties(course, courseDTO);
             coursesDTO.add(courseDTO);
         }
-        return coursesDTO;
+
+        return new PageImpl<>(coursesDTO, coursesPage.getPageable(), coursesPage.getTotalElements());
     }
 
     @Override

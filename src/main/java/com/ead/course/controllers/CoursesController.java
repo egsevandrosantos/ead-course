@@ -2,8 +2,13 @@ package com.ead.course.controllers;
 
 import com.ead.course.dtos.CourseDTO;
 import com.ead.course.services.interfaces.CourseService;
+import com.ead.course.specifications.SpecificationTemplate;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -23,10 +28,13 @@ public class CoursesController {
     private CourseService service;
 
     @GetMapping
-    public ResponseEntity<List<CourseDTO>> findAll() {
+    public ResponseEntity<Page<CourseDTO>> findAll(
+        SpecificationTemplate.CourseSpec filtersSpec,
+        @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable
+    ) {
         return ResponseEntity
             .status(HttpStatus.OK)
-            .body(service.findAll());
+            .body(service.findAll(filtersSpec, pageable));
     }
 
     @GetMapping("/{id}")

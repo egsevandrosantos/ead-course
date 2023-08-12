@@ -65,8 +65,9 @@ public class CourseServiceImpl implements CourseService {
     public UUID create(CourseDTO courseDTO) {
         Course course = new Course();
         BeanUtils.copyProperties(courseDTO, course);
-        course.setCreatedAt(Instant.now());
-        course.setUpdatedAt(Instant.now());
+        Instant createdAt = Instant.now();
+        course.setCreatedAt(createdAt);
+        course.setUpdatedAt(createdAt);
         course = repository.save(course);
         return course.getId();
     }

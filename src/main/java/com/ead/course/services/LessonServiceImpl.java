@@ -33,8 +33,9 @@ public class LessonServiceImpl implements LessonService {
     public UUID create(LessonDTO lessonDTO) {
         Lesson lesson = new Lesson();
         merge(lessonDTO, lesson);
-        lesson.setCreatedAt(Instant.now());
-        lesson.setUpdatedAt(Instant.now());
+        Instant createdAt = Instant.now();
+        lesson.setCreatedAt(createdAt);
+        lesson.setUpdatedAt(createdAt);
         repository.save(lesson);
         return lesson.getId();
     }

@@ -42,8 +42,9 @@ public class ModuleServiceImpl implements ModuleService {
     public UUID create(ModuleDTO moduleDTO) {
         Module module = new Module();
         merge(moduleDTO, module);
-        module.setCreatedAt(Instant.now());
-        module.setUpdatedAt(Instant.now());
+        Instant createdAt = Instant.now();
+        module.setCreatedAt(createdAt);
+        module.setUpdatedAt(createdAt);
         repository.save(module);
         return module.getId();
     }

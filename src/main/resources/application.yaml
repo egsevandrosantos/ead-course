@@ -8,7 +8,7 @@ spring:
     password: admin
   jpa:
     hibernate:
-      ddl-auto: update # Permite atualizar as tabelas automaticamente de acordo com o código
+      ddl-auto: update # Permite atualizar as tabelas automaticamente de acordo com o cÃ³digo
       dialect: org.hibernate.dialect.PostgreSQLDialect
       jdbc:
         lob.non-contextual-creation: true

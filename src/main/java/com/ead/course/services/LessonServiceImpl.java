@@ -7,10 +7,15 @@ import com.ead.course.models.Module;
 import com.ead.course.repositories.LessonRepository;
 import com.ead.course.repositories.ModuleRepository;
 import com.ead.course.services.interfaces.LessonService;
+import com.ead.course.specifications.SpecificationTemplate;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.hibernate.Hibernate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
@@ -125,14 +130,21 @@ public class LessonServiceImpl implements LessonService {
     }
 
     @Override
-    public List<LessonDTO> findAllIntoModule(UUID moduleId) {
-        List<Lesson> lessons = repository.findAllIntoModule(moduleId);
+    public Page<LessonDTO> findAllIntoModule(UUID moduleId, Specification<Lesson> filtersSpec, Pageable pageable) {
+        filtersSpec = ((Specification<Lesson>) (root, query, criteriaBuilder) -> {
+            // root is Lesson
+            return criteriaBuilder.and(criteriaBuilder.equal(root.get("module").get("id"), moduleId));
+        }).and(filtersSpec);
+        Page<Lesson> lessonPage = repository.findAll(filtersSpec, pageable);
+
+        List<Lesson> lessons = lessonPage.getContent();
         List<LessonDTO> lessonsDTO = new ArrayList<>();
         lessons.forEach(lesson -> {
             LessonDTO lessonDTO = new LessonDTO();
             merge(lesson, lessonDTO);
             lessonsDTO.add(lessonDTO);
         });
-        return lessonsDTO;
+
+        return new PageImpl<>(lessonsDTO, lessonPage.getPageable(), lessonPage.getTotalElements());
     }
 }

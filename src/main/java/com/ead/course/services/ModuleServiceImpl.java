@@ -9,12 +9,21 @@ import com.ead.course.repositories.CourseRepository;
 import com.ead.course.repositories.LessonRepository;
 import com.ead.course.repositories.ModuleRepository;
 import com.ead.course.services.interfaces.ModuleService;
+import com.ead.course.specifications.SpecificationTemplate;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.hibernate.Hibernate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
 import javax.transaction.Transactional;
 import java.lang.reflect.Field;
 import java.time.Instant;
@@ -116,15 +125,25 @@ public class ModuleServiceImpl implements ModuleService {
     }
 
     @Override
-    public List<ModuleDTO> findAllIntoCourse(UUID courseId) {
-        List<Module> modules = repository.findAllIntoCourse(courseId);
+    public Page<ModuleDTO> findAllIntoCourse(UUID courseId, Specification<Module> filtersSpec, Pageable pageable) {
+//        QModule qModule = QModule.module;
+//        BooleanExpression isModuleIntoCourse = qModule.course.id.eq(courseId);
+//        repository.findAll(isModuleIntoCourse, pageable);
+        filtersSpec = ((Specification<Module>) (root, query, criteriaBuilder) -> {
+            // root is Module
+            return criteriaBuilder.and(criteriaBuilder.equal(root.get("course").get("id"), courseId));
+        }).and(filtersSpec);
+        Page<Module> modulesPage = repository.findAll(filtersSpec, pageable);
+        List<Module> modules = modulesPage.getContent();
+
         List<ModuleDTO> modulesDTO = new ArrayList<>();
         modules.forEach(module -> {
             ModuleDTO moduleDTO = new ModuleDTO();
             merge(module, moduleDTO);
             modulesDTO.add(moduleDTO);
         });
-        return modulesDTO;
+
+        return new PageImpl<>(modulesDTO, modulesPage.getPageable(), modulesPage.getTotalElements());
     }
 
     @Override

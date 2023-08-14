@@ -48,4 +48,7 @@ public class Course implements Serializable {
     @Fetch(FetchMode.SUBSELECT) // O JOIN ignora o FetchType LAZY e carrega com EAGER, SELECT faz varias queries a mais e SUBSELECT apenas uma query a mais
 //    @OnDelete(action = OnDeleteAction.CASCADE)
     private List<Module> modules;
+    @OneToMany(mappedBy = "course", fetch = FetchType.LAZY)
+    @Fetch(FetchMode.SUBSELECT)
+    private List<CourseUser> coursesUsers;
 }

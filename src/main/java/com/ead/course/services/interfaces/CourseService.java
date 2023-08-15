@@ -1,16 +1,18 @@
 package com.ead.course.services.interfaces;
 
 import com.ead.course.dtos.CourseDTO;
+import com.ead.course.models.Course;
 import com.ead.course.specifications.SpecificationTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface CourseService {
-    Page<CourseDTO> findAll(SpecificationTemplate.CourseSpec filtersSpec, Pageable pageable);
+    Page<CourseDTO> findAll(Specification<Course> filtersSpec, Pageable pageable, UUID userId);
     Optional<CourseDTO> findById(UUID id);
     UUID create(CourseDTO courseDTO);
     void update(CourseDTO updatedCourseDTO);

@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -32,7 +33,12 @@ public class CourseServiceImpl implements CourseService {
     private LessonRepository lessonRepository;
 
     @Override
-    public Page<CourseDTO> findAll(SpecificationTemplate.CourseSpec filtersSpec, Pageable pageable) {
+    public Page<CourseDTO> findAll(Specification<Course> filtersSpec, Pageable pageable, UUID userId) {
+        if (userId != null) {
+            filtersSpec = ((Specification<Course>) (root, query, criteriaBuilder) ->
+                criteriaBuilder.and(criteriaBuilder.equal(root.join("coursesUsers").get("userId"), userId))
+            ).and(filtersSpec);
+        }
         Page<Course> coursesPage = repository.findAll(filtersSpec, pageable);
 
         List<Course> courses = coursesPage.getContent();

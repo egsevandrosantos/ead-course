@@ -30,11 +30,12 @@ public class CoursesController {
     @GetMapping
     public ResponseEntity<Page<CourseDTO>> findAll(
         SpecificationTemplate.CourseSpec filtersSpec,
-        @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable
+        @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable,
+        @RequestParam(required = false) UUID userId
     ) {
         return ResponseEntity
             .status(HttpStatus.OK)
-            .body(service.findAll(filtersSpec, pageable));
+            .body(service.findAll(filtersSpec, pageable, userId));
     }
 
     @GetMapping("/{id}")

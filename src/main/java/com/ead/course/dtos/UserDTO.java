@@ -1,5 +1,6 @@
 package com.ead.course.dtos;
 
+import com.ead.course.enums.UserStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
@@ -17,7 +18,7 @@ public class UserDTO extends BaseDTO {
     private String email;
     private String password;
     private String name;
-    private String status;
+    private UserStatus status;
     private String type;
     private String phone;
     private String cpf;

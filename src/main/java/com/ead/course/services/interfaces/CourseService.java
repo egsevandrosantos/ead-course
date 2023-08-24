@@ -16,7 +16,7 @@ public interface CourseService {
     Optional<CourseDTO> findById(UUID id);
     UUID create(CourseDTO courseDTO);
     void update(CourseDTO updatedCourseDTO);
-    void deleteById(UUID id);
+    void deleteById(UUID id) throws IllegalArgumentException;
     void merge(CourseDTO source, CourseDTO dest);
     void merge(CourseDTO source, CourseDTO dest, Class<? extends CourseDTO.CourseView> view);
     boolean valid(CourseDTO courseDTO);

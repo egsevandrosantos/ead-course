@@ -114,15 +114,15 @@ public class ModulesController {
         @PathVariable(value = "courseId") UUID courseId,
         @PathVariable(value = "id") UUID id
     ) {
-        if (service.findByIdIntoCourse(id, courseId).isEmpty()) {
+        try {
+            service.deleteById(id);
+            return ResponseEntity
+                .status(HttpStatus.NO_CONTENT)
+                .build();
+        } catch (IllegalArgumentException ex) {
             return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .build();
         }
-
-        service.deleteById(id);
-        return ResponseEntity
-            .status(HttpStatus.NO_CONTENT)
-            .build();
     }
 }

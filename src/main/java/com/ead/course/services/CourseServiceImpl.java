@@ -6,9 +6,11 @@ import com.ead.course.dtos.UserDTO;
 import com.ead.course.enums.UserType;
 import com.ead.course.exceptions.UserBlockedException;
 import com.ead.course.models.Course;
+import com.ead.course.models.CourseUser;
 import com.ead.course.models.Lesson;
 import com.ead.course.models.Module;
 import com.ead.course.repositories.CourseRepository;
+import com.ead.course.repositories.CourseUserRepository;
 import com.ead.course.repositories.LessonRepository;
 import com.ead.course.repositories.ModuleRepository;
 import com.ead.course.services.interfaces.CourseService;
@@ -36,6 +38,8 @@ public class CourseServiceImpl implements CourseService {
     private ModuleRepository moduleRepository;
     @Autowired
     private LessonRepository lessonRepository;
+    @Autowired
+    private CourseUserRepository courseUserRepository;
     @Autowired
     private AuthUserClient authUserClient;
 
@@ -95,17 +99,21 @@ public class CourseServiceImpl implements CourseService {
 
     @Transactional
     @Override
-    public void deleteById(UUID id) {
-        if (id == null) {
-            return;
+    public void deleteById(UUID id) throws IllegalArgumentException {
+        Optional<Course> courseOptional = null;
+        if (id == null || (courseOptional = repository.findById(id)).isEmpty()) {
+            throw new IllegalArgumentException();
         }
-        List<Module> modules = moduleRepository.findAllIntoCourse(id);
+        Course course = courseOptional.get();
+        List<Module> modules = moduleRepository.findAllIntoCourse(course.getId());
         for (Module module : modules) {
             List<Lesson> lessons = lessonRepository.findAllIntoModule(module.getId());
             lessonRepository.deleteAll(lessons);
         }
         moduleRepository.deleteAll(modules);
-        repository.deleteById(id);
+        List<CourseUser> courseUsers = courseUserRepository.findByCourse(course);
+        courseUserRepository.deleteAll(courseUsers);
+        repository.delete(course);
     }
 
     @Override

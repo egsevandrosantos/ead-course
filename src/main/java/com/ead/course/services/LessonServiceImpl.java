@@ -49,8 +49,13 @@ public class LessonServiceImpl implements LessonService {
     }
 
     @Override
-    public void deleteById(UUID id) {
-        repository.deleteById(id);
+    public void deleteById(UUID id) throws IllegalArgumentException {
+        Optional<Lesson> lessonOptional = null;
+        if (id == null || (lessonOptional = repository.findById(id)).isEmpty()) {
+            throw new IllegalArgumentException();
+        }
+        Lesson lesson = lessonOptional.get();
+        repository.delete(lesson);
     }
 
     @Override

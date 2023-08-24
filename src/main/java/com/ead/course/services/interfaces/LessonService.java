@@ -14,7 +14,7 @@ import java.util.UUID;
 public interface LessonService {
     UUID create(LessonDTO lessonDTO);
     void update(LessonDTO updatedLessonDTO);
-    void deleteById(UUID id);
+    void deleteById(UUID id) throws IllegalArgumentException;
     void merge(LessonDTO source, LessonDTO dest);
     void merge(LessonDTO source, LessonDTO dest, Class<? extends LessonDTO.LessonView> view);
     boolean valid(LessonDTO updatedLessonDTO);

@@ -12,7 +12,7 @@ import java.util.*;
 public interface ModuleService {
     UUID create(ModuleDTO moduleDTO);
     void update(ModuleDTO updatedModuleDTO);
-    void deleteById(UUID id);
+    void deleteById(UUID id) throws IllegalArgumentException;
     void merge(ModuleDTO source, ModuleDTO dest);
     void merge(ModuleDTO source, ModuleDTO dest, Class<? extends ModuleDTO.ModuleView> view);
     boolean valid(ModuleDTO updatedModuleDTO);

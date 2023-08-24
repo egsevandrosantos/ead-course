@@ -59,10 +59,15 @@ public class ModuleServiceImpl implements ModuleService {
 
     @Transactional
     @Override
-    public void deleteById(UUID id) {
-        List<Lesson> lessons = lessonRepository.findAllIntoModule(id);
+    public void deleteById(UUID id) throws IllegalArgumentException {
+        Optional<Module> moduleOptional = null;
+        if (id == null || (moduleOptional = repository.findById(id)).isEmpty()) {
+            throw new IllegalArgumentException();
+        }
+        Module module = moduleOptional.get();
+        List<Lesson> lessons = lessonRepository.findAllIntoModule(module.getId());
         lessonRepository.deleteAll(lessons);
-        repository.deleteById(id);
+        repository.delete(module);
     }
 
     @Override

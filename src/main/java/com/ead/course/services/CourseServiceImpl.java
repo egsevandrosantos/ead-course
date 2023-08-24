@@ -1,6 +1,10 @@
 package com.ead.course.services;
 
+import com.ead.course.clients.AuthUserClient;
 import com.ead.course.dtos.CourseDTO;
+import com.ead.course.dtos.UserDTO;
+import com.ead.course.enums.UserType;
+import com.ead.course.exceptions.UserBlockedException;
 import com.ead.course.models.Course;
 import com.ead.course.models.Lesson;
 import com.ead.course.models.Module;
@@ -17,6 +21,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 
 import javax.transaction.Transactional;
 import java.lang.reflect.Field;
@@ -31,6 +36,8 @@ public class CourseServiceImpl implements CourseService {
     private ModuleRepository moduleRepository;
     @Autowired
     private LessonRepository lessonRepository;
+    @Autowired
+    private AuthUserClient authUserClient;
 
     @Override
     public Page<CourseDTO> findAll(Specification<Course> filtersSpec, Pageable pageable, UUID userId) {
@@ -128,6 +135,19 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public boolean valid(CourseDTO courseDTO, CourseDTO internalCourseDTO) {
-        return true;
+        try {
+            UserDTO userDTO = authUserClient.findUserById(courseDTO.getUserInstructorId());
+            if (userDTO == null) {
+                courseDTO.getErrors().put("userInstructor", List.of("User not found"));
+            } else if (userDTO.getType() != UserType.INSTRUCTOR) {
+                courseDTO.getErrors().put("userInstructor", List.of("User must be instructor"));
+            }
+        } catch (UserBlockedException ex) {
+            courseDTO.getErrors().put("userInstructor", List.of("User blocked"));
+        } catch (HttpStatusCodeException ex) {
+            courseDTO.getErrors().put("userInstructor", List.of("Error in get user"));
+        }
+
+        return courseDTO.getErrors().isEmpty();
     }
 }

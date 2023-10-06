@@ -117,4 +117,25 @@ public class AuthUserClient {
             log.info("Completed request to URL: {}", requestUrl);
         }
     }
+    
+    public void deleteUserCourseRelationship(UUID courseId) {
+        String requestUrl = authUserURI + "/courses/" + courseId + "/users";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Requested-By", Base64.getEncoder().encodeToString(courseURI.getBytes()));
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<String> requestEntity = new HttpEntity<>(null, headers);
+
+        log.info("Request URL: {}", requestUrl);
+        try {
+            restTemplate
+                .exchange(requestUrl, HttpMethod.DELETE, requestEntity, String.class);
+        } catch (HttpStatusCodeException ex) {
+            log.error("Error in request to URL: {}", requestUrl, ex);
+            throw ex;
+        } finally {
+            log.info("Completed request to URL: {}", requestUrl);
+        }
+    }
 }

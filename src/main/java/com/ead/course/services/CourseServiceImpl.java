@@ -114,6 +114,7 @@ public class CourseServiceImpl implements CourseService {
         List<CourseUser> courseUsers = courseUserRepository.findByCourse(course);
         courseUserRepository.deleteAll(courseUsers);
         repository.delete(course);
+        authUserClient.deleteUserCourseRelationship(course.getId());
     }
 
     @Override

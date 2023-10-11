@@ -7,19 +7,20 @@ import com.ead.course.enums.converters.CourseStatusConverter;
 import lombok.Data;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 @Entity
 @Table(name = "courses")
 @Data
+@EntityListeners(AuditingEntityListener.class)
 public class Course implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -39,8 +40,10 @@ public class Course implements Serializable {
     @Column(nullable = false)
     private CourseLevel level;
     @Column(nullable = false, updatable = false)
+    @CreatedDate
     private Instant createdAt;
     @Column(nullable = false)
+    @LastModifiedDate
     private Instant updatedAt;
     @Column(nullable = false)
     private UUID userInstructorId;

@@ -3,6 +3,11 @@ package com.ead.course.models;
 import lombok.Data;
 
 import javax.persistence.*;
+
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.UUID;
@@ -10,6 +15,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "courses_users")
 @Data
+@EntityListeners(AuditingEntityListener.class)
 public class CourseUser implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -21,7 +27,9 @@ public class CourseUser implements Serializable {
     @Column(nullable = false)
     private UUID userId;
     @Column(nullable = false, updatable = false)
+    @CreatedDate
     private Instant createdAt;
     @Column(nullable = false)
+    @LastModifiedDate
     private Instant updatedAt;
 }

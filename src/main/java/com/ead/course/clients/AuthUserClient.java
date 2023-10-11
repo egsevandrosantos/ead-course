@@ -9,7 +9,6 @@ import lombok.extern.log4j.Log4j2;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -31,8 +30,6 @@ public class AuthUserClient {
     private RestTemplate restTemplate;
     @Autowired
     private ObjectMapper objectMapper;
-    @Autowired
-    private Environment env;
     @Value("${ead.api.url.authuser}")
     private String authUserURI;
     @Value("${ead.api.url.course}")

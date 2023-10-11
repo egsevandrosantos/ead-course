@@ -1,6 +1,7 @@
 package com.ead.course.controllers;
 
 import com.ead.course.dtos.CourseDTO;
+import com.ead.course.services.ServiceResponse;
 import com.ead.course.services.interfaces.CourseService;
 import com.ead.course.specifications.SpecificationTemplate;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -16,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -40,12 +40,12 @@ public class CoursesController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> findById(@PathVariable(value = "id") UUID id) {
-        Optional<CourseDTO> course = service.findById(id);
-        return course
-            .map(value ->
+        Optional<CourseDTO> courseOpt = service.findById(id);
+        return courseOpt
+            .map(course ->
                 ResponseEntity
                     .status(HttpStatus.OK)
-                    .body(value)
+                    .body(course)
             ).orElseGet(() ->
                 ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
@@ -58,16 +58,16 @@ public class CoursesController {
         @RequestBody @Validated(CourseDTO.Create.class) @JsonView(CourseDTO.Create.class) CourseDTO courseDTO,
         UriComponentsBuilder uriComponentsBuilder
     ) {
-        if (service.valid(courseDTO)) {
-            UUID id = service.create(courseDTO);
-            UriComponents uriComponents = uriComponentsBuilder.path("/courses/{id}").buildAndExpand(id);
+        ServiceResponse serviceResponse = service.create(courseDTO);
+        if (serviceResponse.isOk()) {
+            UriComponents uriComponents = uriComponentsBuilder.path("/courses/{id}").buildAndExpand(serviceResponse.getId());
             return ResponseEntity
                 .created(uriComponents.toUri())
                 .build();
         } else {
             return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(courseDTO.getErrors());
+                .body(serviceResponse.getErrors());
         }
     }
 
@@ -76,35 +76,32 @@ public class CoursesController {
         @PathVariable(value = "id") UUID id,
         @RequestBody @Validated(CourseDTO.Update.class) @JsonView(CourseDTO.Update.class) CourseDTO courseDTO
     ) {
-        Optional<CourseDTO> updatedCourseDTOOpt = service.findById(id);
-        if (updatedCourseDTOOpt.isEmpty()) {
+        ServiceResponse serviceResponse = service.update(id, courseDTO);
+        if (!serviceResponse.isFound()) {
             return ResponseEntity.notFound().build();
         }
 
-        CourseDTO updatedCourseDTO = updatedCourseDTOOpt.get();
-        service.merge(courseDTO, updatedCourseDTO, CourseDTO.Update.class);
-        if (service.valid(updatedCourseDTO)) {
-            service.update(updatedCourseDTO);
+        if (serviceResponse.isOk()) {
             return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .build();
         } else {
             return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(updatedCourseDTO.getErrors());
+                .body(serviceResponse.getErrors());
         }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable(value = "id") UUID id) {
-        try {
-            service.deleteById(id);
+        ServiceResponse serviceResponse = service.deleteById(id);
+        if (serviceResponse.isOk()) {
             return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .build();
-        } catch (IllegalArgumentException ex) {
+        } else {
             return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
+                .status(HttpStatus.BAD_REQUEST)
                 .build();
         }
     }

@@ -6,15 +6,11 @@ import com.ead.course.dtos.UserDTO;
 import com.ead.course.enums.UserType;
 import com.ead.course.exceptions.UserBlockedException;
 import com.ead.course.models.Course;
-import com.ead.course.models.CourseUser;
-import com.ead.course.models.Lesson;
-import com.ead.course.models.Module;
 import com.ead.course.repositories.CourseRepository;
 import com.ead.course.repositories.CourseUserRepository;
 import com.ead.course.repositories.LessonRepository;
 import com.ead.course.repositories.ModuleRepository;
 import com.ead.course.services.interfaces.CourseService;
-import com.ead.course.specifications.SpecificationTemplate;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +23,6 @@ import org.springframework.web.client.HttpStatusCodeException;
 
 import javax.transaction.Transactional;
 import java.lang.reflect.Field;
-import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -79,51 +74,70 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
-    public UUID create(CourseDTO courseDTO) {
+    public ServiceResponse create(CourseDTO courseDTO) {
         Course course = new Course();
         BeanUtils.copyProperties(courseDTO, course);
-        Instant createdAt = Instant.now();
-        course.setCreatedAt(createdAt);
-        course.setUpdatedAt(createdAt);
+        Map<String, List<String>> errors = valid(course);
+        if (!errors.isEmpty()) {
+            return ServiceResponse.builder()
+                .ok(false)
+                .errors(errors)
+                .build();
+        }
+
         course = repository.save(course);
-        return course.getId();
+        return ServiceResponse.builder().id(course.getId()).build();
     }
 
     @Override
-    public void update(CourseDTO updatedCourseDTO) {
-        Course course = new Course();
-        BeanUtils.copyProperties(updatedCourseDTO, course);
-        course.setUpdatedAt(Instant.now());
+    @Transactional // Evitar a consulta SELECT antes do UPDATE
+    public ServiceResponse update(UUID id, CourseDTO courseDTO) {
+        Optional<Course> courseOpt = repository.findById(id);
+        if (courseOpt.isEmpty()) {
+            return ServiceResponse.builder()
+                .ok(false)
+                .found(false)
+                .build();
+        }
+
+        Course course = courseOpt.get();
+        merge(courseDTO, course, CourseDTO.Update.class);
+        Map<String, List<String>> errors = valid(course);
+        if (!errors.isEmpty()) {
+            return ServiceResponse.builder()
+                .ok(false)
+                .errors(errors)
+                .build();
+        }
+
         repository.save(course);
+        return ServiceResponse.builder().build();
     }
 
     @Transactional
     @Override
-    public void deleteById(UUID id) throws IllegalArgumentException {
-        Optional<Course> courseOptional = null;
-        if (id == null || (courseOptional = repository.findById(id)).isEmpty()) {
-            throw new IllegalArgumentException();
+    public ServiceResponse deleteById(UUID id) throws IllegalArgumentException {
+        if (id == null) {
+            return ServiceResponse.builder()
+                .ok(false)
+                .build();
         }
-        Course course = courseOptional.get();
-        List<Module> modules = moduleRepository.findAllIntoCourse(course.getId());
-        for (Module module : modules) {
-            List<Lesson> lessons = lessonRepository.findAllIntoModule(module.getId());
-            lessonRepository.deleteAll(lessons);
+
+        if (repository.existsById(id)) {
+            lessonRepository.deleteAllByModuleCourseId(id);
+            moduleRepository.deleteAllByCourseId(id);
+            courseUserRepository.deleteAllByCourseId(id);
+            repository.deleteById(id);
+            authUserClient.deleteUserCourseRelationship(id);
         }
-        moduleRepository.deleteAll(modules);
-        List<CourseUser> courseUsers = courseUserRepository.findByCourse(course);
-        courseUserRepository.deleteAll(courseUsers);
-        repository.delete(course);
-        authUserClient.deleteUserCourseRelationship(course.getId());
+        return ServiceResponse.builder().build();
     }
 
-    @Override
     public void merge(CourseDTO source, CourseDTO dest) {
         BeanUtils.copyProperties(source, dest);
     }
 
-    @Override
-    public void merge(CourseDTO source, CourseDTO dest, Class<? extends CourseDTO.CourseView> view) {
+    public void merge(CourseDTO source, Course dest, Class<? extends CourseDTO.CourseView> view) {
         String[] fieldsNotInViewToIgnore = Arrays.stream(CourseDTO.class.getDeclaredFields())
             .filter(field -> {
                 JsonView jsonView = field.getAnnotation(JsonView.class);
@@ -137,26 +151,21 @@ public class CourseServiceImpl implements CourseService {
         BeanUtils.copyProperties(source, dest, fieldsNotInViewToIgnore);
     }
 
-    @Override
-    public boolean valid(CourseDTO courseDTO) {
-        return valid(courseDTO, null);
-    }
-
-    @Override
-    public boolean valid(CourseDTO courseDTO, CourseDTO internalCourseDTO) {
+    public Map<String, List<String>> valid(Course updatedCourse) {
+        Map<String, List<String>> errors = new HashMap<>();
         try {
-            UserDTO userDTO = authUserClient.findUserById(courseDTO.getUserInstructorId());
+            UserDTO userDTO = authUserClient.findUserById(updatedCourse.getUserInstructorId());
             if (userDTO == null) {
-                courseDTO.getErrors().put("userInstructor", List.of("User not found"));
+                errors.put("userInstructor", List.of("User not found"));
             } else if (userDTO.getType() != UserType.INSTRUCTOR) {
-                courseDTO.getErrors().put("userInstructor", List.of("User must be instructor"));
+                errors.put("userInstructor", List.of("User must be instructor"));
             }
         } catch (UserBlockedException ex) {
-            courseDTO.getErrors().put("userInstructor", List.of("User blocked"));
+            errors.put("userInstructor", List.of("User blocked"));
         } catch (HttpStatusCodeException ex) {
-            courseDTO.getErrors().put("userInstructor", List.of("Error in get user"));
+            errors.put("userInstructor", List.of("Error in get user"));
         }
 
-        return courseDTO.getErrors().isEmpty();
+        return errors;
     }
 }

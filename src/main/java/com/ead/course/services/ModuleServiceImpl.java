@@ -3,13 +3,11 @@ package com.ead.course.services;
 import com.ead.course.dtos.CourseDTO;
 import com.ead.course.dtos.ModuleDTO;
 import com.ead.course.models.Course;
-import com.ead.course.models.Lesson;
 import com.ead.course.models.Module;
 import com.ead.course.repositories.CourseRepository;
 import com.ead.course.repositories.LessonRepository;
 import com.ead.course.repositories.ModuleRepository;
 import com.ead.course.services.interfaces.ModuleService;
-import com.ead.course.specifications.SpecificationTemplate;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.hibernate.Hibernate;
 import org.springframework.beans.BeanUtils;
@@ -20,13 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
 import javax.transaction.Transactional;
 import java.lang.reflect.Field;
-import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -39,44 +32,78 @@ public class ModuleServiceImpl implements ModuleService {
     private CourseRepository courseRepository;
 
     @Override
-    public UUID create(ModuleDTO moduleDTO) {
+    public ServiceResponse create(UUID courseId, ModuleDTO moduleDTO) {
+        if (courseId == null) {
+            return ServiceResponse.builder()
+                .ok(false)
+                .found(false)
+                .build();
+        }
+
+        Course course = new Course();
+        course.setId(courseId);
+
         Module module = new Module();
+        module.setCourse(course);
         merge(moduleDTO, module);
-        Instant createdAt = Instant.now();
-        module.setCreatedAt(createdAt);
-        module.setUpdatedAt(createdAt);
+        Map<String, List<String>> errors = valid(module);
+        if (!errors.isEmpty()) {
+            return ServiceResponse.builder()
+                .ok(false)
+                .errors(errors)
+                .build();
+        }
+
         repository.save(module);
-        return module.getId();
+        return ServiceResponse.builder().id(module.getId()).build();
     }
 
     @Override
-    public void update(ModuleDTO updatedModuleDTO) {
-        Module module = new Module();
-        merge(updatedModuleDTO, module);
-        module.setUpdatedAt(Instant.now());
+    @Transactional // Evitar a consulta SELECT antes do UPDATE
+    public ServiceResponse update(UUID id, UUID courseId, ModuleDTO moduleDTO) {
+        Optional<Module> moduleOpt;
+        if (id == null || courseId == null || (moduleOpt = repository.findByIdIntoCourse(id, courseId)).isEmpty()) {
+            return ServiceResponse.builder()
+                .ok(false)
+                .found(false)
+                .build();
+        }
+
+        Course course = new Course();
+        course.setId(courseId);
+
+        Module module = moduleOpt.get();
+        module.setCourse(course);
+        merge(moduleDTO, module, ModuleDTO.Update.class);
+        Map<String, List<String>> errors = valid(module);
+        if (!errors.isEmpty()) {
+            return ServiceResponse.builder()
+                .ok(false)
+                .errors(errors)
+                .build();
+        }
+
         repository.save(module);
+        return ServiceResponse.builder().build();
     }
 
     @Transactional
     @Override
-    public void deleteById(UUID id) throws IllegalArgumentException {
-        Optional<Module> moduleOptional = null;
-        if (id == null || (moduleOptional = repository.findById(id)).isEmpty()) {
-            throw new IllegalArgumentException();
+    public ServiceResponse deleteById(UUID id) throws IllegalArgumentException {
+        if (id == null) {
+            return ServiceResponse.builder()
+                .ok(false)
+                .build();
         }
-        Module module = moduleOptional.get();
-        List<Lesson> lessons = lessonRepository.findAllIntoModule(module.getId());
-        lessonRepository.deleteAll(lessons);
-        repository.delete(module);
+
+        if (repository.existsById(id)) {
+            lessonRepository.deleteAllByModuleId(id);
+            repository.deleteById(id);
+        }
+        return ServiceResponse.builder().build();
     }
 
-    @Override
-    public void merge(ModuleDTO source, ModuleDTO dest) {
-        BeanUtils.copyProperties(source, dest);
-    }
-
-    @Override
-    public void merge(ModuleDTO source, ModuleDTO dest, Class<? extends ModuleDTO.ModuleView> view) {
+    public void merge(ModuleDTO source, Module dest, Class<? extends ModuleDTO.ModuleView> view) {
         String[] fieldsNotInViewToIgnore = Arrays.stream(ModuleDTO.class.getDeclaredFields())
             .filter(field -> {
                 JsonView jsonView = field.getAnnotation(JsonView.class);
@@ -92,10 +119,6 @@ public class ModuleServiceImpl implements ModuleService {
 
     private void merge(ModuleDTO source, Module dest) {
         BeanUtils.copyProperties(source, dest);
-
-        Course course = new Course();
-        BeanUtils.copyProperties(source.getCourse(), course);
-        dest.setCourse(course);
     }
 
     private void merge(Module source, ModuleDTO dest) {
@@ -108,26 +131,17 @@ public class ModuleServiceImpl implements ModuleService {
         }
     }
 
-    @Override
-    public boolean valid(ModuleDTO updatedModuleDTO) {
-        return valid(updatedModuleDTO, null);
-    }
+    public Map<String, List<String>> valid(Module updatedModule) {
+        Map<String, List<String>> errors = new HashMap<>();
 
-    @Override
-    public boolean valid(ModuleDTO updatedModuleDTO, ModuleDTO internalModuleDTO) {
-        Optional<Course> course = Optional.empty();
-        boolean courseNotExists = updatedModuleDTO.getCourse() == null
-            || updatedModuleDTO.getCourse().getId() == null
-            || (course = courseRepository.findById(updatedModuleDTO.getCourse().getId())).isEmpty();
+        boolean courseNotExists = updatedModule.getCourse() == null
+            || updatedModule.getCourse().getId() == null
+            || !courseRepository.existsById(updatedModule.getCourse().getId());
         if (courseNotExists) {
-            updatedModuleDTO.getErrors().put("course", List.of("Course not exists."));
-        } else {
-            CourseDTO courseDTO = new CourseDTO();
-            BeanUtils.copyProperties(course.get(), courseDTO);
-            updatedModuleDTO.setCourse(courseDTO);
+            errors.put("course", List.of("Course not exists."));
         }
 
-        return updatedModuleDTO.getErrors().isEmpty();
+        return errors;
     }
 
     @Override

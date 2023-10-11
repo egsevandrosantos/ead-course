@@ -7,7 +7,6 @@ import com.ead.course.models.Module;
 import com.ead.course.repositories.LessonRepository;
 import com.ead.course.repositories.ModuleRepository;
 import com.ead.course.services.interfaces.LessonService;
-import com.ead.course.specifications.SpecificationTemplate;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.hibernate.Hibernate;
 import org.springframework.beans.BeanUtils;
@@ -19,8 +18,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
-import java.time.Instant;
 import java.util.*;
+
+import javax.transaction.Transactional;
 
 @Service
 public class LessonServiceImpl implements LessonService {
@@ -30,41 +30,69 @@ public class LessonServiceImpl implements LessonService {
     private ModuleRepository moduleRepository;
 
     @Override
-    public UUID create(LessonDTO lessonDTO) {
+    public ServiceResponse create(UUID moduleId, LessonDTO lessonDTO) {
+        Module module = new Module();
+        module.setId(moduleId);
+
         Lesson lesson = new Lesson();
+        lesson.setModule(module);
         merge(lessonDTO, lesson);
-        Instant createdAt = Instant.now();
-        lesson.setCreatedAt(createdAt);
-        lesson.setUpdatedAt(createdAt);
-        repository.save(lesson);
-        return lesson.getId();
-    }
-
-    @Override
-    public void update(LessonDTO updatedLessonDTO) {
-        Lesson lesson = new Lesson();
-        merge(updatedLessonDTO, lesson);
-        lesson.setUpdatedAt(Instant.now());
-        repository.save(lesson);
-    }
-
-    @Override
-    public void deleteById(UUID id) throws IllegalArgumentException {
-        Optional<Lesson> lessonOptional = null;
-        if (id == null || (lessonOptional = repository.findById(id)).isEmpty()) {
-            throw new IllegalArgumentException();
+        Map<String, List<String>> errors = valid(lesson);
+        if (!errors.isEmpty()) {
+            return ServiceResponse.builder()
+                .ok(false)
+                .errors(errors)
+                .build();
         }
-        Lesson lesson = lessonOptional.get();
-        repository.delete(lesson);
+
+        repository.save(lesson);
+        return ServiceResponse.builder().id(lesson.getId()).build();
     }
 
     @Override
-    public void merge(LessonDTO source, LessonDTO dest) {
-        BeanUtils.copyProperties(source, dest);
+    @Transactional // Evitar a consulta SELECT antes do UPDATE
+    public ServiceResponse update(UUID moduleId, UUID id, LessonDTO updatedLessonDTO) {
+        Optional<Lesson> lessonOpt = repository.findByIdIntoModule(id, moduleId);
+        if (lessonOpt.isEmpty()) {
+            return ServiceResponse.builder()
+                .ok(false)
+                .found(false)
+                .build();
+        }
+
+        Module module = new Module();
+        module.setId(moduleId);
+
+        Lesson lesson = lessonOpt.get();
+        lesson.setModule(module);
+        merge(updatedLessonDTO, lesson, LessonDTO.Update.class);
+        Map<String, List<String>> errors = valid(lesson);
+        if (!errors.isEmpty()) {
+            return ServiceResponse.builder()
+                .ok(false)
+                .errors(errors)
+                .build();
+        }
+
+        repository.save(lesson);
+        return ServiceResponse.builder().build();
     }
 
     @Override
-    public void merge(LessonDTO source, LessonDTO dest, Class<? extends LessonDTO.LessonView> view) {
+    public ServiceResponse deleteById(UUID id) {
+        if (id == null) {
+            return ServiceResponse.builder()
+                .ok(false)
+                .build();
+        }
+
+        if (repository.existsById(id)) {
+            repository.deleteById(id);
+        }
+        return ServiceResponse.builder().build();
+    }
+
+    public void merge(LessonDTO source, Lesson dest, Class<? extends LessonDTO.LessonView> view) {
         String[] fieldsNotInViewToIgnore = Arrays.stream(LessonDTO.class.getDeclaredFields())
             .filter(field -> {
                 JsonView jsonView = field.getAnnotation(JsonView.class);
@@ -80,10 +108,6 @@ public class LessonServiceImpl implements LessonService {
 
     private void merge(LessonDTO source, Lesson dest) {
         BeanUtils.copyProperties(source, dest);
-
-        Module module = new Module();
-        BeanUtils.copyProperties(source.getModule(), module);
-        dest.setModule(module);
     }
 
     private void merge(Lesson source, LessonDTO dest) {
@@ -96,26 +120,17 @@ public class LessonServiceImpl implements LessonService {
         }
     }
 
-    @Override
-    public boolean valid(LessonDTO updatedLessonDTO) {
-        return valid(updatedLessonDTO, null);
-    }
+    public Map<String, List<String>> valid(Lesson updatedLesson) {
+        Map<String, List<String>> errors = new HashMap<>();
 
-    @Override
-    public boolean valid(LessonDTO updatedLessonDTO, LessonDTO internalLessonDTO) {
-        Optional<Module> module = Optional.empty();
-        boolean moduleNotExists = updatedLessonDTO.getModule() == null
-            || updatedLessonDTO.getModule().getId() == null
-            || (module = moduleRepository.findById(updatedLessonDTO.getModule().getId())).isEmpty();
+        boolean moduleNotExists = updatedLesson.getModule() == null
+            || updatedLesson.getModule().getId() == null
+            || !(moduleRepository.existsById(updatedLesson.getModule().getId()));
         if (moduleNotExists) {
-            updatedLessonDTO.getErrors().put("module", List.of("Module not exists."));
-        } else {
-            ModuleDTO moduleDTO = new ModuleDTO();
-            BeanUtils.copyProperties(module.get(), moduleDTO);
-            updatedLessonDTO.setModule(moduleDTO);
+            errors.put("module", List.of("Module not exists."));
         }
 
-        return updatedLessonDTO.getErrors().isEmpty();
+        return errors;
     }
 
     @Override

@@ -18,7 +18,7 @@ spring:
         lob.non-contextual-creation: true
     properties:
       hibernate:
-        show_sql: true
+        "[show_sql]": true
   output:
     ansi:
       enabled: ALWAYS

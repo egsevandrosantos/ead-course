@@ -1,7 +1,7 @@
 package com.ead.course.controllers;
 
-import com.ead.course.dtos.CourseDTO;
 import com.ead.course.dtos.ModuleDTO;
+import com.ead.course.services.ServiceResponse;
 import com.ead.course.services.interfaces.ModuleService;
 import com.ead.course.specifications.SpecificationTemplate;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -64,20 +63,18 @@ public class ModulesController {
         @RequestBody @Validated(ModuleDTO.Create.class) @JsonView(ModuleDTO.Create.class) ModuleDTO moduleDTO,
         UriComponentsBuilder uriComponentsBuilder
     ) {
-        CourseDTO courseDTO = new CourseDTO();
-        courseDTO.setId(courseId);
-        moduleDTO.setCourse(courseDTO);
-        if (service.valid(moduleDTO)) {
-            UUID id = service.create(moduleDTO);
+        ServiceResponse serviceResponse = service.create(courseId, moduleDTO);
+
+        if (serviceResponse.isOk()) {
             UriComponents uriComponents = uriComponentsBuilder.path("/courses/{courseId}/modules/{id}")
-                .buildAndExpand(courseId, id);
+                .buildAndExpand(courseId, serviceResponse.getId());
             return ResponseEntity
                 .created(uriComponents.toUri())
                 .build();
         } else {
             return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(moduleDTO.getErrors());
+                .body(serviceResponse.getErrors());
         }
     }
 
@@ -87,25 +84,20 @@ public class ModulesController {
         @PathVariable(value = "id") UUID id,
         @RequestBody @Validated(ModuleDTO.Update.class) @JsonView(ModuleDTO.Update.class) ModuleDTO moduleDTO
     ) {
-        Optional<ModuleDTO> updatedModuleDTOOpt = service.findByIdIntoCourse(id, courseId);
-        if (updatedModuleDTOOpt.isEmpty()) {
+        ServiceResponse serviceResponse = service.update(id, courseId, moduleDTO);
+
+        if (!serviceResponse.isFound()) {
             return ResponseEntity.notFound().build();
         }
 
-        ModuleDTO updatedModuleDTO = updatedModuleDTOOpt.get();
-        CourseDTO courseDTO = new CourseDTO();
-        courseDTO.setId(courseId);
-        updatedModuleDTO.setCourse(courseDTO);
-        service.merge(moduleDTO, updatedModuleDTO, ModuleDTO.Update.class);
-        if (service.valid(updatedModuleDTO)) {
-            service.update(updatedModuleDTO);
+        if (serviceResponse.isOk()) {
             return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .build();
         } else {
             return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(updatedModuleDTO.getErrors());
+                .body(serviceResponse.getErrors());
         }
     }
 
@@ -114,14 +106,15 @@ public class ModulesController {
         @PathVariable(value = "courseId") UUID courseId,
         @PathVariable(value = "id") UUID id
     ) {
-        try {
-            service.deleteById(id);
+        ServiceResponse serviceResponse = service.deleteById(id);
+
+        if (serviceResponse.isOk()) {
             return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .build();
-        } catch (IllegalArgumentException ex) {
+        } else {
             return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
+                .status(HttpStatus.BAD_REQUEST)
                 .build();
         }
     }

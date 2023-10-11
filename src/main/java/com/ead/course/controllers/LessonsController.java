@@ -1,7 +1,7 @@
 package com.ead.course.controllers;
 
 import com.ead.course.dtos.LessonDTO;
-import com.ead.course.dtos.ModuleDTO;
+import com.ead.course.services.ServiceResponse;
 import com.ead.course.services.interfaces.LessonService;
 import com.ead.course.specifications.SpecificationTemplate;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -64,20 +63,18 @@ public class LessonsController {
         @RequestBody @Validated(LessonDTO.Create.class) @JsonView(LessonDTO.Create.class) LessonDTO lessonDTO,
         UriComponentsBuilder uriComponentsBuilder
     ) {
-        ModuleDTO moduleDTO = new ModuleDTO();
-        moduleDTO.setId(moduleId);
-        lessonDTO.setModule(moduleDTO);
-        if (service.valid(lessonDTO)) {
-            UUID id = service.create(lessonDTO);
+        ServiceResponse serviceResponse = service.create(moduleId, lessonDTO);
+
+        if (serviceResponse.isOk()) {
             UriComponents uriComponents = uriComponentsBuilder.path("/modules/{moduleId}/lessons/{id}")
-                .buildAndExpand(moduleId, id);
+                .buildAndExpand(moduleId, serviceResponse.getId());
             return ResponseEntity
                 .created(uriComponents.toUri())
                 .build();
         } else {
             return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(lessonDTO.getErrors());
+                .body(serviceResponse.getErrors());
         }
     }
 
@@ -87,25 +84,20 @@ public class LessonsController {
         @PathVariable(value = "id") UUID id,
         @RequestBody @Validated(LessonDTO.Update.class) @JsonView(LessonDTO.Update.class) LessonDTO lessonDTO
     ) {
-        Optional<LessonDTO> updatedLessonDTOOptional = service.findByIdIntoModule(id, moduleId);
-        if (updatedLessonDTOOptional.isEmpty()) {
+        ServiceResponse serviceResponse = service.update(moduleId, id, lessonDTO);
+
+        if (!serviceResponse.isFound()) {
             return ResponseEntity.notFound().build();
         }
 
-        LessonDTO updatedLessonDTO = updatedLessonDTOOptional.get();
-        ModuleDTO moduleDTO = new ModuleDTO();
-        moduleDTO.setId(moduleId);
-        updatedLessonDTO.setModule(moduleDTO);
-        service.merge(lessonDTO, updatedLessonDTO, LessonDTO.Update.class);
-        if (service.valid(updatedLessonDTO)) {
-            service.update(updatedLessonDTO);
+        if (serviceResponse.isOk()) {
             return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .build();
         } else {
             return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(updatedLessonDTO.getErrors());
+                .body(serviceResponse.getErrors());
         }
     }
 

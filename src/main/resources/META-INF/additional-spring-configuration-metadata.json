@@ -1,0 +1,24 @@
+{
+  "properties": [
+    {
+      "name": "spring.jpa.hibernate.dialect",
+      "type": "java.lang.String",
+      "description": "A description for 'spring.jpa.hibernate.dialect'"
+    },
+    {
+      "name": "spring.jpa.hibernate.jdbc.lob.non-contextual-creation",
+      "type": "java.lang.String",
+      "description": "A description for 'spring.jpa.hibernate.jdbc.lob.non-contextual-creation'"
+    },
+    {
+      "name": "ead.api.url.authuser",
+      "type": "java.lang.String",
+      "description": "A description for 'ead.api.url.authuser'"
+    },
+    {
+      "name": "ead.api.url.course",
+      "type": "java.lang.String",
+      "description": "A description for 'ead.api.url.course'"
+    }
+  ]
+}

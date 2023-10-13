@@ -11,8 +11,11 @@ import java.util.UUID;
 
 public interface CourseUserRepository extends JpaRepository<CourseUser, UUID> {
     boolean existsByCourseAndUserId(Course course, UUID userId);
+    boolean existsByUserId(UUID userId);
     List<CourseUser> findByCourse(Course course);
-    
+    @Modifying
+    @Query("DELETE FROM CourseUser cu WHERE cu.userId = :userId")
+    void deleteAllByUserId(UUID userId); // Evitar a consulta SELECT antes do DELETE
     @Modifying
     @Query("DELETE FROM CourseUser cu WHERE cu.course.id = :courseId")
     void deleteAllByCourseId(UUID courseId); // Evitar a consulta SELECT antes do DELETE

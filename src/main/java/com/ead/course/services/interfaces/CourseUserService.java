@@ -12,4 +12,5 @@ import java.util.UUID;
 public interface CourseUserService {
     Page<UserDTO> findAll(Pageable pageable, UUID courseId);
     ServiceResponse create(UUID courseId, CourseUserDTO courseUserDTO);
+    ServiceResponse deleteByUserId(UUID userId);
 }

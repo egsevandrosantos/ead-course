@@ -69,6 +69,22 @@ public class CourseUserServiceImpl implements CourseUserService {
         return ServiceResponse.builder().id(courseUser.getId()).build();
     }
 
+    @Override
+    @Transactional
+    public ServiceResponse deleteByUserId(UUID userId) {
+        if (userId == null) {
+            return ServiceResponse.builder()
+                .ok(false)
+                .found(false)
+                .build();
+        }
+
+        if (repository.existsByUserId(userId)) {
+            repository.deleteAllByUserId(userId);
+        }
+        return ServiceResponse.builder().build();
+    }
+
     public Map<String, List<String>> valid(CourseUser courseUser) {
         Map<String, List<String>> errors = new HashMap<>();
         if (courseUser.getCourse() == null) {

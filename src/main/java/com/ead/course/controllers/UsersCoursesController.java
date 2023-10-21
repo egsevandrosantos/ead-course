@@ -21,6 +21,7 @@ import com.ead.course.services.interfaces.CourseUserService;
 @RestController
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RequestMapping("/users/{userId}/courses")
+@Deprecated
 public class UsersCoursesController {
     @Value("${ead.api.url.authuser}")
     private String authUserURI;

@@ -1,13 +1,8 @@
 package com.ead.course.services;
 
-import com.ead.course.clients.AuthUserClient;
 import com.ead.course.dtos.CourseDTO;
-import com.ead.course.dtos.UserDTO;
-import com.ead.course.enums.UserType;
-import com.ead.course.exceptions.UserBlockedException;
 import com.ead.course.models.Course;
 import com.ead.course.repositories.CourseRepository;
-import com.ead.course.repositories.CourseUserRepository;
 import com.ead.course.repositories.LessonRepository;
 import com.ead.course.repositories.ModuleRepository;
 import com.ead.course.services.interfaces.CourseService;
@@ -19,7 +14,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpStatusCodeException;
 
 import javax.transaction.Transactional;
 import java.lang.reflect.Field;
@@ -33,18 +27,9 @@ public class CourseServiceImpl implements CourseService {
     private ModuleRepository moduleRepository;
     @Autowired
     private LessonRepository lessonRepository;
-    @Autowired
-    private CourseUserRepository courseUserRepository;
-    @Autowired
-    private AuthUserClient authUserClient;
 
     @Override
     public Page<CourseDTO> findAll(Specification<Course> filtersSpec, Pageable pageable, UUID userId) {
-        if (userId != null) {
-            filtersSpec = ((Specification<Course>) (root, query, criteriaBuilder) ->
-                criteriaBuilder.and(criteriaBuilder.equal(root.join("coursesUsers").get("userId"), userId))
-            ).and(filtersSpec);
-        }
         Page<Course> coursesPage = repository.findAll(filtersSpec, pageable);
 
         List<Course> courses = coursesPage.getContent();
@@ -126,9 +111,7 @@ public class CourseServiceImpl implements CourseService {
         if (repository.existsById(id)) {
             lessonRepository.deleteAllByModuleCourseId(id);
             moduleRepository.deleteAllByCourseId(id);
-            courseUserRepository.deleteAllByCourseId(id);
             repository.deleteById(id);
-            authUserClient.deleteUserCourseRelationship(id);
         }
         return ServiceResponse.builder().build();
     }
@@ -153,19 +136,7 @@ public class CourseServiceImpl implements CourseService {
 
     public Map<String, List<String>> valid(Course updatedCourse) {
         Map<String, List<String>> errors = new HashMap<>();
-        try {
-            UserDTO userDTO = authUserClient.findUserById(updatedCourse.getUserInstructorId());
-            if (userDTO == null) {
-                errors.put("userInstructor", List.of("User not found"));
-            } else if (userDTO.getType() != UserType.INSTRUCTOR) {
-                errors.put("userInstructor", List.of("User must be instructor"));
-            }
-        } catch (UserBlockedException ex) {
-            errors.put("userInstructor", List.of("User blocked"));
-        } catch (HttpStatusCodeException ex) {
-            errors.put("userInstructor", List.of("Error in get user"));
-        }
-
+        // TODO: Validate user exists and is instructor
         return errors;
     }
 }

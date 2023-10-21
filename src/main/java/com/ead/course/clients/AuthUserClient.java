@@ -25,6 +25,7 @@ import java.util.UUID;
 
 @Component
 @Log4j2
+@Deprecated
 public class AuthUserClient {
     @Autowired
     private RestTemplate restTemplate;

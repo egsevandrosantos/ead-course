@@ -16,6 +16,7 @@ import java.util.UUID;
 @Table(name = "courses_users")
 @Data
 @EntityListeners(AuditingEntityListener.class)
+@Deprecated
 public class CourseUser implements Serializable {
     private static final long serialVersionUID = 1L;
 

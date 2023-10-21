@@ -22,6 +22,7 @@ import java.util.UUID;
 @RestController
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RequestMapping("/courses/{courseId}/users")
+@Deprecated
 public class CoursesUsersController {
     @Autowired
     private CourseUserService service;

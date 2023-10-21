@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 import java.util.UUID;
 
+@Deprecated
 public interface CourseUserRepository extends JpaRepository<CourseUser, UUID> {
     boolean existsByCourseAndUserId(Course course, UUID userId);
     boolean existsByUserId(UUID userId);

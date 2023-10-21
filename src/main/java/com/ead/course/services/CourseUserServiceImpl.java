@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Deprecated
 public class CourseUserServiceImpl implements CourseUserService {
     @Autowired
     private CourseUserRepository repository;

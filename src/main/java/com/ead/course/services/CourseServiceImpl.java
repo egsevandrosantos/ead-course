@@ -30,6 +30,12 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public Page<CourseDTO> findAll(Specification<Course> filtersSpec, Pageable pageable, UUID userId) {
+        if (userId != null) {
+            filtersSpec = ((Specification<Course>) (root, query, criteriaBuilder) -> {
+                // root is Course
+                return criteriaBuilder.and(criteriaBuilder.equal(root.get("users").get("id"), userId)); // TODO: WORK?
+            }).and(filtersSpec);
+        }
         Page<Course> coursesPage = repository.findAll(filtersSpec, pageable);
 
         List<Course> courses = coursesPage.getContent();

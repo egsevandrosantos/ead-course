@@ -15,6 +15,7 @@ import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -51,4 +52,11 @@ public class Course implements Serializable {
     @Fetch(FetchMode.SUBSELECT) // O JOIN ignora o FetchType LAZY e carrega com EAGER, SELECT faz varias queries a mais e SUBSELECT apenas uma query a mais
 //    @OnDelete(action = OnDeleteAction.CASCADE)
     private List<Module> modules;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "courses_users",
+        joinColumns = @JoinColumn(name = "course_id", referencedColumnName = "id"),
+        inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id")
+    )
+    private Set<User> users; // Set create pk in courses_users
 }

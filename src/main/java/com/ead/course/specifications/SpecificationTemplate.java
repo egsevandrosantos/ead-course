@@ -3,6 +3,8 @@ package com.ead.course.specifications;
 import com.ead.course.models.Course;
 import com.ead.course.models.Lesson;
 import com.ead.course.models.Module;
+import com.ead.course.models.User;
+
 import net.kaczmarzyk.spring.data.jpa.domain.EqualIgnoreCase;
 import net.kaczmarzyk.spring.data.jpa.domain.LikeIgnoreCase;
 import net.kaczmarzyk.spring.data.jpa.web.annotation.And;
@@ -22,4 +24,12 @@ public class SpecificationTemplate {
 
     @Spec(path = "title", spec = LikeIgnoreCase.class)
     public interface LessonSpec extends Specification<Lesson> {}
+
+    @And({
+        @Spec(path = "type", spec = EqualIgnoreCase.class),
+        @Spec(path = "status", spec = EqualIgnoreCase.class),
+        @Spec(path = "email", spec = EqualIgnoreCase.class),
+        @Spec(path = "name", spec = LikeIgnoreCase.class)
+    })
+    public interface UserSpec extends Specification<User> {}
 }
